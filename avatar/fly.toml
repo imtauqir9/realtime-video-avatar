@@ -1,0 +1,27 @@
+# Fly.io config for the avatar web app (frontend + backend in one machine).
+# Secrets (set with `fly secrets set`): TAVUS_API_KEY, TAVUS_PERSONA_ID, optionally TAVUS_REPLICA_ID.
+app = "imran-avatar"
+primary_region = "dfw"
+
+[build]
+
+[env]
+  DEMO_MAX_MINUTES = "10"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"

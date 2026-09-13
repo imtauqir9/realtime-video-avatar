@@ -1,10 +1,38 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Daily, { type DailyCall } from "@daily-co/daily-js";
-import { createConversation, endConversation } from "./api";
+import { createConversation, endConversation, getMe, login, logout } from "./api";
 
 type Status = "idle" | "connecting" | "live" | "error";
+type Auth = "loading" | "open" | "locked" | "ok";
 type Mode = "text" | "voice" | "video";
 type Line = { role: "you" | "avatar"; text: string };
+
+// Who the avatar is. Keep in sync with the heading in knowledge/ME.md.
+const AVATAR_NAME = "Imran Tauqir";
+const AVATAR_ROLE = "VP Global Technology · Bank of America";
+const TAGLINE = "Building the infrastructure that runs AI.";
+const INITIALS = AVATAR_NAME.split(" ").map((w) => w[0]).join("").slice(0, 2);
+
+const ICONS: Record<Mode, JSX.Element> = {
+  text: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="6" width="18" height="12" rx="2" />
+      <path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10" />
+    </svg>
+  ),
+  voice: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    </svg>
+  ),
+  video: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="7" width="13" height="10" rx="2" />
+      <path d="M16 11l5-3v8l-5-3" />
+    </svg>
+  ),
+};
 
 const STATUS_LABEL: Record<Status, string> = {
   idle: "Ready",
@@ -14,9 +42,9 @@ const STATUS_LABEL: Record<Status, string> = {
 };
 
 const MODES: { id: Mode; title: string; desc: string; color: string }[] = [
-  { id: "text", title: "Type", desc: "Text in, video out. No mic or camera.", color: "amber" },
-  { id: "voice", title: "Talk", desc: "Speak with your mic — it listens and replies.", color: "blue" },
-  { id: "video", title: "Face to face", desc: "Mic + camera, so it can see and hear you.", color: "purple" },
+  { id: "text", title: "Type", desc: "Text in, video out. No mic or camera needed.", color: "amber" },
+  { id: "voice", title: "Talk", desc: "Speak with your mic and hear the reply.", color: "blue" },
+  { id: "video", title: "Face to face", desc: "Mic and camera, so it can see and hear you.", color: "purple" },
 ];
 
 export default function App() {
@@ -39,6 +67,36 @@ export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const selfVideoRef = useRef<HTMLVideoElement>(null);
   const transcriptRef = useRef<HTMLDivElement>(null);
+
+  const [auth, setAuth] = useState<Auth>("loading");
+  const [code, setCode] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authBusy, setAuthBusy] = useState(false);
+
+  useEffect(() => {
+    getMe()
+      .then((me) => setAuth(!me.authRequired ? "open" : me.authed ? "ok" : "locked"))
+      .catch(() => setAuth("open")); // backend unreachable: let the normal error path report it
+  }, []);
+
+  const signIn = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!code.trim()) return;
+      setAuthBusy(true);
+      setAuthError("");
+      try {
+        await login(code.trim());
+        setCode("");
+        setAuth("ok");
+      } catch (err: any) {
+        setAuthError(err?.message || String(err));
+      } finally {
+        setAuthBusy(false);
+      }
+    },
+    [code],
+  );
 
   useEffect(() => {
     const el = transcriptRef.current;
@@ -174,6 +232,11 @@ export default function App() {
         if (wantAudio || wantVideo) await refreshDevices();
       } catch (e: any) {
         cleanup(false);
+        if (/HTTP 401|sign in/i.test(String(e?.message))) {
+          setStatus("idle");
+          setAuth("locked");
+          return;
+        }
         setError(e?.message || String(e));
         setStatus("error");
       }
@@ -218,51 +281,127 @@ export default function App() {
     [input],
   );
 
+  const signOut = useCallback(async () => {
+    cleanup();
+    await logout();
+    setAuth("locked");
+  }, [cleanup]);
+
   const showSession = status === "connecting" || status === "live";
+  const locked = auth === "locked";
 
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark" aria-hidden />
-          <span className="brand-name">Avatar</span>
+          <span className="brand-mark" aria-hidden>{INITIALS}</span>
+          <span className="brand-text">
+            <span className="brand-name">{AVATAR_NAME}</span>
+            <span className="brand-sub">AI Avatar</span>
+          </span>
         </div>
-        <div className={`status status--${status}`}>
-          <span className="dot" />
-          {STATUS_LABEL[status]}
-          {showSession && <span className="mode-tag">{mode}</span>}
+        <div className="topbar-right">
+          <div className={`status status--${status}`}>
+            <span className="dot" />
+            {STATUS_LABEL[status]}
+            {showSession && <span className="mode-tag">{mode}</span>}
+          </div>
+          {auth === "ok" && (
+            <button className="btn btn-link" type="button" onClick={signOut}>
+              Sign out
+            </button>
+          )}
         </div>
       </header>
 
       <main className="main">
-        {!showSession ? (
+        {auth === "loading" ? (
+          <div className="overlay-page">
+            <span className="spinner" aria-hidden />
+          </div>
+        ) : locked ? (
+          <section className="gate">
+            <div className="hero-avatar" aria-hidden>
+              <span>{INITIALS}</span>
+            </div>
+            <h1 className="gate-title">{AVATAR_NAME}</h1>
+            <p className="gate-sub">This avatar is private. Enter the access code to continue.</p>
+            <form className="gate-form" onSubmit={signIn}>
+              <input
+                className="composer-input"
+                type="password"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="Access code"
+                autoComplete="current-password"
+                autoFocus
+              />
+              <button className="btn btn-send" type="submit" disabled={authBusy || !code.trim()}>
+                {authBusy ? "Checking…" : "Enter"}
+              </button>
+            </form>
+            {authError && <p className="error">{authError}</p>}
+          </section>
+        ) : !showSession ? (
           <section className="hero">
+            <div className="hero-avatar" aria-hidden>
+              <span>{INITIALS}</span>
+            </div>
+            <p className="eyebrow">Realtime video avatar</p>
             <h1 className="hero-title">
-              Talk to your <span className="grad">video avatar</span>
+              Ask <span className="grad">{AVATAR_NAME.split(" ")[0]}</span> anything
             </h1>
-            <p className="hero-sub">Pick how you'd like to talk to it.</p>
+            <p className="hero-sub">
+              {AVATAR_ROLE}. Choose how you'd like to have the conversation.
+            </p>
             <div className="modes">
               {MODES.map((m) => (
                 <button key={m.id} className={`mode-card mode-card--${m.color}`} onClick={() => start(m.id)}>
+                  <span className="mode-icon">{ICONS[m.id]}</span>
                   <span className="mode-title">{m.title}</span>
                   <span className="mode-desc">{m.desc}</span>
+                  <span className="mode-cta">Start →</span>
                 </button>
               ))}
             </div>
             {error && <p className="error">{error}</p>}
+            <p className="tagline">“{TAGLINE}”</p>
           </section>
         ) : (
           <div className="live">
             <div className="session">
+              <div className="stage-col">
               <div className="stage">
                 <video ref={videoRef} className="video" autoPlay playsInline muted />
-                {status === "connecting" && <div className="overlay">Connecting…</div>}
+                {status === "connecting" && (
+                  <div className="overlay">
+                    <span className="spinner" aria-hidden />
+                    Connecting to {AVATAR_NAME.split(" ")[0]}…
+                  </div>
+                )}
+                {status === "live" && (
+                  <div className="stage-badge">
+                    <span className="dot" />
+                    Live
+                  </div>
+                )}
                 {mode === "video" && (
                   <video ref={selfVideoRef} className="selfview" autoPlay playsInline muted />
                 )}
-                {caption && <div className="caption">{caption}</div>}
               </div>
-              <aside className="transcript" ref={transcriptRef}>
+              {caption && (
+                <div className="caption">
+                  <span className="caption-who">{AVATAR_NAME.split(" ")[0]}</span>
+                  {caption}
+                </div>
+              )}
+              </div>
+              <aside className="panel">
+                <div className="panel-head">
+                  <span>Conversation</span>
+                  <span className="mode-tag">{mode}</span>
+                </div>
+                <div className="transcript" ref={transcriptRef}>
                 {lines.length === 0 ? (
                   <p className="hint">
                     {mode === "text"
@@ -272,11 +411,12 @@ export default function App() {
                 ) : (
                   lines.map((l, i) => (
                     <div key={i} className={`bubble bubble--${l.role}`}>
-                      <span className="who">{l.role}</span>
+                      <span className="who">{l.role === "you" ? "You" : AVATAR_NAME.split(" ")[0]}</span>
                       {l.text}
                     </div>
                   ))
                 )}
+                </div>
               </aside>
             </div>
 
@@ -336,7 +476,7 @@ export default function App() {
                   className="composer-input"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask me anything…"
+                  placeholder={`Ask ${AVATAR_NAME.split(" ")[0]} anything…`}
                   autoFocus
                 />
                 <button className="btn btn-send" type="submit">
