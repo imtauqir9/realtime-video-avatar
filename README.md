@@ -34,8 +34,8 @@ The build is staged so you prove the concept for free before paying or recording
 ### Step 1 — Create your `knowledge/ME.md`
 
 **You need to create a file `knowledge/ME.md`** describing yourself. This is the only content that makes
-the avatar "you". An example for Ed Donner is already in this repo at `knowledge/ME.md` — replace it
-with your own, or copy its shape.
+the avatar "you". The profile for Imran Tauqir is already in this repo at `knowledge/ME.md`, built
+from imrantauqir.com. Edit it as needed, or copy its shape for another person.
 
 Guidelines:
 - Start the file with a top-level heading that is your name, e.g. `# Jane Smith`. The script uses that
