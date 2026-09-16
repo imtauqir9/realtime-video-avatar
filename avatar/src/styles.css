@@ -25,12 +25,17 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+@supports (height: 100dvh) {
+  html, body, #root { height: 100dvh; }
+}
 body {
   margin: 0;
   font-family: var(--font);
   color: var(--gray-100);
   background: var(--gray-950);
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
 }
 
 /* ambient background glows */
@@ -260,6 +265,7 @@ body {
   margin-bottom: 4px;
 }
 .mode-icon svg { width: 22px; height: 22px; }
+.mode-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .mode-card .mode-title { font-weight: 700; font-size: 16px; color: var(--white); }
 .mode-card .mode-desc { font-size: 13px; line-height: 1.45; color: var(--gray-300); }
 .mode-cta {
@@ -534,14 +540,105 @@ body {
 .composer-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(32, 157, 215, 0.18); }
 .composer-input::placeholder { color: var(--gray-400); }
 
+/* ---------- tablets and small laptops ---------- */
+@media (max-width: 980px) {
+  .session { grid-template-columns: minmax(0, 1fr) 290px; }
+}
+
+/* ---------- phones and small tablets ---------- */
 @media (max-width: 820px) {
-  .main { padding: 18px 16px; }
-  .topbar { padding: 12px 16px; }
-  .session { grid-template-columns: 1fr; }
-  .panel { max-height: 32vh; }
-  .hero-title { font-size: 32px; }
-  .hero-avatar { width: 68px; height: 68px; font-size: 22px; }
-  .modes { grid-template-columns: 1fr; }
-  .controls { flex-wrap: wrap; }
-  .composer { order: 3; flex-basis: 100%; }
+  .main {
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+  .topbar {
+    padding: 10px calc(14px + env(safe-area-inset-right)) 10px calc(14px + env(safe-area-inset-left));
+  }
+  .brand-mark { width: 32px; height: 32px; font-size: 12px; }
+  .brand-name { font-size: 14px; }
+  .status { padding: 5px 10px; font-size: 12px; }
+
+  /* landing */
+  .hero-title { font-size: 30px; letter-spacing: -0.6px; }
+  .hero-sub { font-size: 14.5px; margin-bottom: 24px; }
+  .hero-avatar { width: 64px; height: 64px; font-size: 22px; margin-bottom: 16px; }
+  .eyebrow { font-size: 11px; letter-spacing: 1.2px; }
+  .tagline { margin-top: 24px; font-size: 12.5px; }
+
+  /* mode cards become a compact vertical list */
+  .modes { grid-template-columns: 1fr; gap: 10px; }
+  .mode-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    min-height: 68px;
+  }
+  .mode-card::before { inset: 0 auto 0 0; width: 3px; height: auto; }
+  .mode-icon { width: 38px; height: 38px; flex: none; margin: 0; }
+  .mode-card .mode-title { font-size: 15px; }
+  .mode-card .mode-desc { font-size: 12.5px; }
+  .mode-card .mode-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .mode-cta { display: none; }
+
+  /* live session: video on top, transcript below, controls docked */
+  .live { gap: 12px; }
+  .session { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
+  .stage-col { gap: 10px; }
+  .stage { flex: none; aspect-ratio: 3 / 4; max-height: 46vh; border-radius: 14px; }
+  .caption { font-size: 14px; padding: 10px 13px; max-height: 76px; }
+  .selfview { width: 104px; top: 10px; right: 10px; }
+  .stage-badge { top: 10px; left: 10px; }
+  .panel { min-height: 120px; border-radius: 14px; }
+  .panel-head { padding: 10px 13px; font-size: 12.5px; }
+  .bubble { max-width: 100%; font-size: 14px; }
+
+  /* grid keeps the dock to two predictable rows: devices, then composer + End */
+  .controls {
+    position: sticky;
+    bottom: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+  }
+  .device { grid-column: 1 / -1; min-width: 0; }
+  .composer { grid-column: 1; min-width: 0; }
+  .btn-ghost { grid-column: 2; }
+  .btn { padding: 11px 14px; }
+  .composer-input { font-size: 16px; min-width: 0; } /* 16px keeps iOS from zooming on focus */
+  .device-select { flex: 1; min-width: 0; max-width: none; }
+
+  /* sign-in gate */
+  .gate { padding: 28px 20px 24px; }
+  .gate-form { flex-direction: column; }
+  .gate-form .btn { width: 100%; }
+}
+
+/* ---------- narrow phones ---------- */
+@media (max-width: 400px) {
+  .hero-title { font-size: 26px; }
+  .brand-sub { display: none; }
+  .stage { max-height: 40vh; }
+  .btn-toggle { padding: 11px 12px; font-size: 13px; }
+}
+
+/* ---------- short/landscape phones ---------- */
+@media (max-height: 520px) and (max-width: 980px) {
+  .stage { max-height: 62vh; }
+  .hero-avatar, .eyebrow, .tagline { display: none; }
+  .hero-sub { margin-bottom: 18px; }
+}
+
+/* ---------- touch devices: no hover, so show affordances ---------- */
+@media (hover: none) {
+  .mode-card:hover { transform: none; box-shadow: none; }
+  .mode-card:active { transform: scale(0.985); border-color: var(--accent); }
+  .btn:hover { background: inherit; }
+  .btn, .mode-card, .device-select { -webkit-tap-highlight-color: transparent; }
+}
+
+/* ---------- respect reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

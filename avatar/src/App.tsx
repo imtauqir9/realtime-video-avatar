@@ -358,8 +358,10 @@ export default function App() {
               {MODES.map((m) => (
                 <button key={m.id} className={`mode-card mode-card--${m.color}`} onClick={() => start(m.id)}>
                   <span className="mode-icon">{ICONS[m.id]}</span>
-                  <span className="mode-title">{m.title}</span>
-                  <span className="mode-desc">{m.desc}</span>
+                  <span className="mode-text">
+                    <span className="mode-title">{m.title}</span>
+                    <span className="mode-desc">{m.desc}</span>
+                  </span>
                   <span className="mode-cta">Start →</span>
                 </button>
               ))}
