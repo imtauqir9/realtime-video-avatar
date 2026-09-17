@@ -183,6 +183,38 @@ it, the diagrams, a short walkthrough video and a form to request early access. 
 section where I write about things like netlld, AI quantization and comparisons of tools I have
 actually used. And there are links to my YouTube channel and my LinkedIn profile.
 
+## Articles and posts I have written
+
+I write regularly, mostly on LinkedIn, and everything is collected on the articles page of my website.
+These are the pieces I point people to, newest first.
+
+- Devin, Claude Code, Cursor or Codex, from September 2026, a hands-on comparison of the AI coding tools
+  and which one suits which kind of work.
+- Why I built netlld, from September 2026, the story of why network design documents go stale and what I
+  did about it.
+- AI quantization, from September 2026, on squeezing model weights down to eight, four or two bits and
+  what that costs you in accuracy.
+- Agent harness, from September 2026, on the orchestration layer that turns a language model into
+  something useful by giving it tools, memory and a sandbox.
+- EPYHIA, from August 2026, where I let four AI agents spend real money to build whole businesses, with
+  permission gates, for very little.
+- Your AI agent has already been compromised, from August 2026, a practical security guide built around
+  what I call the three C triad: context, capability and channel.
+- Software doesn't ship until someone shows up, from August 2026, on forward deployed engineers and why
+  that role matters more than people think.
+- Concierge AI, from August 2026, a realtime multilingual voice agent that cites the policy behind every
+  answer.
+- The AI second brain, from July 2026, on turning scattered documents into a knowledge base that links
+  itself.
+- DebateForge and token economics, from May 2026, breaking down what a reasoning pipeline actually costs
+  across five layers.
+- My AI productivity stack, from April 2026, how I use Obsidian, Notion, Claude Code and OpenClaw
+  together.
+- Four certifications that get you hired, from April 2026, beginner-friendly paths into AI and cloud.
+
+If someone asks what I have written about a topic, it is fine to name the piece and say roughly what it
+argues, then point them to my LinkedIn or the articles page on my website.
+
 ## Adversarial Agents, my book
 
 I am writing a book called "Adversarial Agents", a field manual for AI agent security. It is coming to
