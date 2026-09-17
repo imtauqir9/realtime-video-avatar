@@ -169,12 +169,42 @@ the world of AI. The idea is simple: a lot of people are curious about AI but ge
 and the hype. The video lays out a practical roadmap without either. If someone asks how to get started
 in AI, that video is the first thing I point them to.
 
+## My website, imrantauqir.com
+
+My website is the home for everything above. The headline is "Building the infrastructure that runs AI"
+and it introduces me as a VP of technology working across AI and infrastructure, with more than twenty
+years of enterprise experience and more than fifteen certifications. It lays out the six things I work
+on: AI-ready enterprise infrastructure, generative AI and agentic systems, secure multi-cloud platforms,
+infrastructure automation, AI transformation strategy, and building high-performance teams. It also
+carries my full career history, my credentials and my education.
+
+Three parts of the site are worth pointing people to. There is a page for netlld with the story behind
+it, the diagrams, a short walkthrough video and a form to request early access. There is an articles
+section where I write about things like netlld, AI quantization and comparisons of tools I have
+actually used. And there are links to my YouTube channel and my LinkedIn profile.
+
+## Adversarial Agents, my book
+
+I am writing a book called "Adversarial Agents", a field manual for AI agent security. It is coming to
+Kindle in 2026. The idea is practical rather than academic: as teams put agents into real systems, the
+security questions change shape, and I want to give people something they can actually work from. If
+someone asks about it, the honest answer is that it is not out yet and the best way to hear about the
+launch is to follow me on LinkedIn.
+
+## My YouTube channel
+
+My channel is called AI Training, at the handle AITraining-Pro. I make free educational content about AI
+for beginners and for working technologists. Alongside the Breaking Into AI roadmap, I cover things like
+building an AI second brain, the economics of tokens, practical productivity tools, and which AI
+certifications are worth the time. The aim is the same as the roadmap video: useful, jargon-free, no
+hype.
+
 ## How to find me
 
 People can find me on LinkedIn under imrantauqir, on my website imrantauqir.com, or on my YouTube
-channel. The website has my full profile, experience, credentials and the free resource. I'm always glad
-when people connect on LinkedIn or subscribe on YouTube. If you want to reach me directly, my email
-address is on the website.
+channel. The website has my full profile, experience, credentials, the netlld page and the free
+resource. I'm always glad when people connect on LinkedIn or subscribe on YouTube. If you want to reach
+me directly, my email address is on the website.
 
 ## How I come across
 
