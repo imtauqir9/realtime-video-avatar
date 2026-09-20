@@ -59,8 +59,9 @@ cp .env.example .env
 # then edit .env and set TAVUS_API_KEY=...
 ```
 
-You can leave every other value commented out; the defaults are sensible (stock replica
-`r90bbd427f71`, hosted model `tavus-claude-haiku-4.5`, 10-minute conversation cap).
+You can leave every other value commented out; the defaults are sensible (replica
+`r045d2c98f20`, hosted model `tavus-claude-haiku-4.5`, 10-minute conversation cap). To use a
+stock face instead, set `TAVUS_REPLICA_ID` — see `.env.example`.
 
 ### Step 4 — Run the setup script
 

@@ -168,7 +168,7 @@ def main() -> None:
         "the person described below",
     )
 
-    replica_id = os.environ.get("TAVUS_REPLICA_ID", "r90bbd427f71").strip()
+    replica_id = os.environ.get("TAVUS_REPLICA_ID", "r045d2c98f20").strip()
     llm_model = os.environ.get("TAVUS_LLM_MODEL", "tavus-claude-haiku-4.5").strip()
     max_minutes = int(os.environ.get("DEMO_MAX_MINUTES", "10"))
 

@@ -31,7 +31,7 @@ if (existsSync(envPath)) {
 const API = "https://tavusapi.com/v2";
 const KEY = process.env.TAVUS_API_KEY;
 const PERSONA_ID = process.env.TAVUS_PERSONA_ID;
-const REPLICA_ID = process.env.TAVUS_REPLICA_ID || "r90bbd427f71";
+const REPLICA_ID = process.env.TAVUS_REPLICA_ID || "r045d2c98f20";
 const PORT = Number(process.env.PORT || process.env.BACKEND_PORT || 8787);
 const HOST = process.env.HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 
