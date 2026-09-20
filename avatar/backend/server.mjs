@@ -62,7 +62,7 @@ function serveStatic(req, res) {
   res.end(readFileSync(file));
   return true;
 }
-const MAX_MINUTES = Number(process.env.DEMO_MAX_MINUTES || 10);
+const MAX_MINUTES = Number(process.env.DEMO_MAX_MINUTES || 3);
 
 // --- access-code authentication ---
 // Set ACCESS_CODE (a shared password) to require a login before a session can start. When it is
@@ -208,7 +208,7 @@ const server = createServer(async (req, res) => {
         conversation_name: "Avatar web demo",
         properties: {
           max_call_duration: MAX_MINUTES * 60,
-          participant_left_timeout: 120,
+          participant_left_timeout: 30,
           enable_closed_captions: true,
           language: "english",
         },

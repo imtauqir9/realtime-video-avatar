@@ -60,7 +60,7 @@ cp .env.example .env
 ```
 
 You can leave every other value commented out; the defaults are sensible (replica
-`r2c3392fa1fc`, hosted model `tavus-claude-haiku-4.5`, 10-minute conversation cap). To use a
+`r2c3392fa1fc`, hosted model `tavus-claude-haiku-4.5`, 3-minute conversation cap). To use a
 stock face instead, set `TAVUS_REPLICA_ID` — see `.env.example`.
 
 ### Step 4 — Run the setup script

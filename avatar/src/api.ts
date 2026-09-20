@@ -4,7 +4,12 @@ export async function createConversation(): Promise<Conversation> {
   const r = await fetch("/api/conversations", { method: "POST" });
   if (!r.ok) {
     const e = await r.json().catch(() => ({}));
-    throw new Error(e.error || `Failed to create conversation (HTTP ${r.status})`);
+    // The backend wraps every Tavus rejection as "Tavus create failed" and puts the real
+    // reason (out of credits, replica not found, ...) in `detail`. Surface it or the user
+    // sees a generic failure with no way to tell a billing problem from a broken id.
+    const detail = e.detail?.message || e.detail?.error || (typeof e.detail === "string" ? e.detail : "");
+    const base = e.error || `Failed to create conversation (HTTP ${r.status})`;
+    throw new Error(detail ? `${base}: ${detail}` : base);
   }
   return r.json();
 }
