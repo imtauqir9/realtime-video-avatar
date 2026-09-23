@@ -13,6 +13,12 @@ const AVATAR_ROLE = "VP Global Technology · Bank of America";
 const TAGLINE = "Building the infrastructure that runs AI.";
 const INITIALS = AVATAR_NAME.split(" ").map((w) => w[0]).join("").slice(0, 2);
 
+// How long to wait for the replica's video before giving up. A join can stall with
+// no error at all - the permission prompt is dismissed, the camera is held by another
+// app, or the replica never sends a track - and a paid conversation stays open the
+// whole time, so this has to fail loudly rather than spin forever.
+const CONNECT_TIMEOUT_MS = 25000;
+
 const ICONS: Record<Mode, JSX.Element> = {
   text: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -222,6 +228,17 @@ export default function App() {
           }
         });
 
+        call.on("camera-error", (ev: any) => {
+          const detail = String(ev?.error?.type || ev?.errorMsg?.errorMsg || "");
+          cleanup(false);
+          setError(
+            /permission|denied|not-?allowed|blocked/i.test(detail)
+              ? "Camera and microphone access was blocked. Allow it in your browser, then start again."
+              : "Could not start your camera or microphone. Check that no other app is using it.",
+          );
+          setStatus("error");
+        });
+
         call.on("left-meeting", () => cleanup());
         call.on("available-devices-updated", () => refreshDevices());
 
@@ -287,6 +304,19 @@ export default function App() {
     setAuth("locked");
   }, [cleanup]);
 
+  // status only becomes "live" when the replica's video track arrives.
+  useEffect(() => {
+    if (status !== "connecting") return;
+    const timer = setTimeout(() => {
+      cleanup(false);
+      setError(
+        "Could not connect. If your browser asked for camera or microphone access, allow it and try again.",
+      );
+      setStatus("error");
+    }, CONNECT_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [status, cleanup]);
+
   const showSession = status === "connecting" || status === "live";
   const locked = auth === "locked";
 
@@ -306,6 +336,14 @@ export default function App() {
             {STATUS_LABEL[status]}
             {showSession && <span className="mode-tag">{mode}</span>}
           </div>
+          {showSession && (
+            <button className="btn btn-end" type="button" onClick={() => cleanup()}>
+              <svg className="btn-end-icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.956.956 0 0 1-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.27 11.27 0 0 0-2.67-1.85.996.996 0 0 1-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" />
+              </svg>
+              End call
+            </button>
+          )}
           {auth === "ok" && (
             <button className="btn btn-link" type="button" onClick={signOut}>
               Sign out
@@ -347,7 +385,7 @@ export default function App() {
             <div className="hero-avatar" aria-hidden>
               <span>{INITIALS}</span>
             </div>
-            <p className="eyebrow">Realtime video avatar</p>
+            <p className="eyebrow"><span className="eyebrow-dot" aria-hidden />Realtime video avatar</p>
             <h1 className="hero-title">
               Ask <span className="grad">{AVATAR_NAME.split(" ")[0]}</span> anything
             </h1>
@@ -390,18 +428,69 @@ export default function App() {
                 {mode === "video" && (
                   <video ref={selfVideoRef} className="selfview" autoPlay playsInline muted />
                 )}
+                {caption && status === "live" && <p className="caption">{caption}</p>}
               </div>
-              {caption && (
-                <div className="caption">
-                  <span className="caption-who">{AVATAR_NAME.split(" ")[0]}</span>
-                  {caption}
+              {mode !== "text" && (
+                <div className="stage-bar">
+                  <div className="device">
+                    <button
+                      className={`chip ${micOn ? "on" : "off"}`}
+                      type="button"
+                      onClick={toggleMic}
+                      aria-pressed={micOn}
+                    >
+                      <span className="chip-icon" aria-hidden>{ICONS.voice}</span>
+                      {micOn ? "Mic on" : "Mic off"}
+                    </button>
+                    {mics.length > 0 && (
+                      <select
+                        className="device-select"
+                        value={micId}
+                        onChange={(e) => selectMic(e.target.value)}
+                        aria-label="Microphone"
+                      >
+                        {mics.map((d, i) => (
+                          <option key={d.deviceId} value={d.deviceId}>
+                            {d.label || `Mic ${i + 1}`}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  {mode === "video" && (
+                    <div className="device">
+                      <button
+                        className={`chip ${camOn ? "on" : "off"}`}
+                        type="button"
+                        onClick={toggleCam}
+                        aria-pressed={camOn}
+                      >
+                        <span className="chip-icon" aria-hidden>{ICONS.video}</span>
+                        {camOn ? "Camera on" : "Camera off"}
+                      </button>
+                      {cameras.length > 0 && (
+                        <select
+                          className="device-select"
+                          value={camId}
+                          onChange={(e) => selectCamera(e.target.value)}
+                          aria-label="Camera"
+                        >
+                          {cameras.map((d, i) => (
+                            <option key={d.deviceId} value={d.deviceId}>
+                              {d.label || `Camera ${i + 1}`}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               </div>
               <aside className="panel">
                 <div className="panel-head">
                   <span>Conversation</span>
-                  <span className="mode-tag">{mode}</span>
+                  {lines.length > 0 && <span className="panel-count">{lines.length}</span>}
                 </div>
                 <div className="transcript" ref={transcriptRef}>
                 {lines.length === 0 ? (
@@ -422,73 +511,18 @@ export default function App() {
               </aside>
             </div>
 
-            <div className="controls">
-              {mode !== "text" && (
-                <div className="device">
-                  <button
-                    className={`btn btn-toggle ${micOn ? "on" : "off"}`}
-                    type="button"
-                    onClick={toggleMic}
-                  >
-                    {micOn ? "Mic on" : "Mic off"}
-                  </button>
-                  {mics.length > 0 && (
-                    <select
-                      className="device-select"
-                      value={micId}
-                      onChange={(e) => selectMic(e.target.value)}
-                      title="Microphone"
-                    >
-                      {mics.map((d, i) => (
-                        <option key={d.deviceId} value={d.deviceId}>
-                          {d.label || `Mic ${i + 1}`}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              )}
-              {mode === "video" && (
-                <div className="device">
-                  <button
-                    className={`btn btn-toggle ${camOn ? "on" : "off"}`}
-                    type="button"
-                    onClick={toggleCam}
-                  >
-                    {camOn ? "Camera on" : "Camera off"}
-                  </button>
-                  {cameras.length > 0 && (
-                    <select
-                      className="device-select"
-                      value={camId}
-                      onChange={(e) => selectCamera(e.target.value)}
-                      title="Camera"
-                    >
-                      {cameras.map((d, i) => (
-                        <option key={d.deviceId} value={d.deviceId}>
-                          {d.label || `Camera ${i + 1}`}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              )}
-              <form className="composer" onSubmit={send}>
-                <input
-                  className="composer-input"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder={`Ask ${AVATAR_NAME.split(" ")[0]} anything…`}
-                  autoFocus
-                />
-                <button className="btn btn-send" type="submit">
-                  Send
-                </button>
-              </form>
-              <button className="btn btn-ghost" type="button" onClick={() => cleanup()}>
-                End
+            <form className="dock" onSubmit={send}>
+              <input
+                className="composer-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder={`Ask ${AVATAR_NAME.split(" ")[0]} anything…`}
+                autoFocus
+              />
+              <button className="btn btn-send" type="submit">
+                Send
               </button>
-            </div>
+            </form>
           </div>
         )}
       </main>
