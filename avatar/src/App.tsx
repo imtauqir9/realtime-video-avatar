@@ -63,7 +63,6 @@ export default function App() {
   const [camId, setCamId] = useState("");
   const [micId, setMicId] = useState("");
   const [error, setError] = useState("");
-  const [caption, setCaption] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
   const [input, setInput] = useState("");
 
@@ -166,7 +165,6 @@ export default function App() {
   const start = useCallback(
     async (chosen: Mode) => {
       setError("");
-      setCaption("");
       setLines([]);
       setMode(chosen);
       setStatus("connecting");
@@ -216,7 +214,6 @@ export default function App() {
           const text = String(d.properties?.speech || "");
           if (!text) return;
           if (role === "replica") {
-            setCaption(text);
             setLines((prev) => [...prev, { role: "avatar", text }]);
           } else if (role === "user") {
             // spoken input shows up here; dedupe against text we already added on send
@@ -428,7 +425,6 @@ export default function App() {
                 {mode === "video" && (
                   <video ref={selfVideoRef} className="selfview" autoPlay playsInline muted />
                 )}
-                {caption && status === "live" && <p className="caption">{caption}</p>}
               </div>
               {mode !== "text" && (
                 <div className="stage-bar">

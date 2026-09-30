@@ -511,28 +511,6 @@ body {
   min-height: 0;
 }
 .stage-col .stage { flex: 1; }
-/* What is being said right now, as a subtitle over the lower edge of the
-   frame. The transcript panel keeps the history, so this no longer repeats
-   as a second block underneath the video. */
-.caption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  margin: 0;
-  padding: 48px 28px 22px;
-  color: var(--white);
-  font-size: 16px;
-  line-height: 1.45;
-  text-align: center;
-  text-wrap: balance;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
-  background: linear-gradient(to top, rgba(6, 7, 10, 0.92), rgba(6, 7, 10, 0));
-  pointer-events: none;
-  animation: rise 0.3s ease both;
-}
-
 .selfview {
   position: absolute;
   top: 14px;
@@ -764,7 +742,6 @@ body {
   .session { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
   .stage-col { gap: 10px; }
   .stage { flex: none; aspect-ratio: 3 / 4; max-height: 46vh; border-radius: 14px; }
-  .caption { font-size: 14px; padding: 36px 16px 14px; }
   .selfview { width: 104px; top: 10px; right: 10px; }
   .stage-badge { top: 10px; left: 10px; }
   .panel { min-height: 120px; border-radius: 14px; }
