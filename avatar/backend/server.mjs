@@ -162,6 +162,20 @@ async function endActiveConversations() {
   }
 }
 
+// The replica's portrait (still + short looping clip) for the landing page. It rarely changes,
+// so cache it rather than calling Tavus on every page load.
+let replicaCache = { at: 0, body: null };
+async function replicaInfo() {
+  if (replicaCache.body && Date.now() - replicaCache.at < 10 * 60 * 1000) return replicaCache.body;
+  const { status, body } = await tavus(`/replicas/${REPLICA_ID}`, "GET");
+  if (status >= 300) return { image: "", video: "" };
+  replicaCache = {
+    at: Date.now(),
+    body: { image: body.thumbnail_image_url || "", video: body.thumbnail_video_url || "" },
+  };
+  return replicaCache.body;
+}
+
 const server = createServer(async (req, res) => {
   try {
     if (req.method === "OPTIONS") return send(res, 204, {});
@@ -192,6 +206,11 @@ const server = createServer(async (req, res) => {
       return send(res, 401, { error: "Please sign in with the access code." });
     }
 
+    if (req.method === "GET" && req.url === "/api/replica") {
+      if (!KEY) return send(res, 200, { image: "", video: "" });
+      return send(res, 200, await replicaInfo());
+    }
+
     if (req.method === "POST" && req.url === "/api/conversations") {
       if (!KEY) {
         return send(res, 500, { error: "TAVUS_API_KEY is not set (check the .env in the project root)." });
@@ -214,7 +233,11 @@ const server = createServer(async (req, res) => {
         },
       });
       if (status >= 300) return send(res, status, { error: "Tavus create failed", detail: body });
-      return send(res, 200, { conversation_url: body.conversation_url, conversation_id: body.conversation_id });
+      return send(res, 200, {
+        conversation_url: body.conversation_url,
+        conversation_id: body.conversation_id,
+        max_seconds: MAX_MINUTES * 60,
+      });
     }
 
     const endMatch = req.url && req.url.match(/^\/api\/conversations\/([^/]+)\/end$/);

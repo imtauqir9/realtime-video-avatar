@@ -1,4 +1,4 @@
-export type Conversation = { conversation_url: string; conversation_id: string };
+export type Conversation = { conversation_url: string; conversation_id: string; max_seconds?: number };
 
 export async function createConversation(): Promise<Conversation> {
   const r = await fetch("/api/conversations", { method: "POST" });
@@ -40,4 +40,12 @@ export async function login(code: string): Promise<void> {
 
 export async function logout(): Promise<void> {
   await fetch("/api/logout", { method: "POST" }).catch(() => {});
+}
+
+export type Replica = { image: string; video: string };
+
+export async function getReplica(): Promise<Replica> {
+  const r = await fetch("/api/replica");
+  if (!r.ok) return { image: "", video: "" };
+  return r.json();
 }
