@@ -7,6 +7,16 @@ function briefLink(): string {
   return new URLSearchParams(window.location.search).get("brief") || "";
 }
 
+// The title of the article this page was opened for, or "" when it was opened
+// directly. A link that is not from the writing app, or has expired, reports why.
+export async function getBrief(): Promise<{ title: string; error: string }> {
+  const link = briefLink();
+  if (!link) return { title: "", error: "" };
+  const r = await fetch(`/api/brief?link=${encodeURIComponent(link)}`);
+  const body = await r.json().catch(() => ({}));
+  return r.ok ? { title: body.title || "", error: "" } : { title: "", error: body.error || "Could not read the article." };
+}
+
 export async function createConversation(): Promise<Conversation> {
   const brief = briefLink();
   const r = await fetch("/api/conversations", {

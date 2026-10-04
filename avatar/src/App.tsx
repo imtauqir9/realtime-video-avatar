@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Daily, { type DailyCall } from "@daily-co/daily-js";
-import { createConversation, endConversation, getMe, getReplica, login, logout, type Replica } from "./api";
+import { createConversation, endConversation, getBrief, getMe, getReplica, login, logout, type Replica } from "./api";
 
 type Status = "idle" | "connecting" | "live" | "error";
 type Auth = "loading" | "open" | "locked" | "ok";
@@ -150,6 +150,16 @@ export default function App() {
     if (auth !== "open" && auth !== "ok") return;
     getReplica().then(setReplica).catch(() => {});
   }, [auth]);
+
+  // Opened from an article: say so, so it is clear the avatar knows what it is about.
+  const [brief, setBrief] = useState<{ title: string; error: string }>({ title: "", error: "" });
+  useEffect(() => {
+    if (auth !== "open" && auth !== "ok") return;
+    getBrief().then(setBrief).catch(() => {});
+  }, [auth]);
+  const suggestions = brief.title
+    ? ["What is the main point, in a minute?", "What would you do first?", "What did the article leave out?"]
+    : SUGGESTIONS;
 
   const signIn = useCallback(
     async (e: React.FormEvent) => {
@@ -517,8 +527,20 @@ export default function App() {
                 Realtime AI video avatar
               </p>
               <h1 className="hero-title">
-                Have a conversation with <em>{FIRST_NAME}</em>
+                {brief.title ? (
+                  <>Talk with <em>{FIRST_NAME}</em> about this article</>
+                ) : (
+                  <>Have a conversation with <em>{FIRST_NAME}</em></>
+                )}
               </h1>
+              {brief.title && (
+                <div className="brief-card" role="note">
+                  <span className="brief-label">Briefed on</span>
+                  <span className="brief-title">{brief.title}</span>
+                  <span className="brief-hint">{FIRST_NAME} has read it and will start there. Pick a mode to begin.</span>
+                </div>
+              )}
+              {brief.error && <p className="error">{brief.error}</p>}
               <p className="hero-sub">
                 A lifelike AI twin of {AVATAR_NAME}, {AVATAR_ROLE}. Ask about AI infrastructure, agentic
                 systems, or the path from network engineer to AI leader.
@@ -541,7 +563,7 @@ export default function App() {
               <div className="starters">
                 <span className="starters-label">{ICONS.spark} Or start with a question</span>
                 <div className="starters-list">
-                  {SUGGESTIONS.map((q) => (
+                  {suggestions.map((q) => (
                     <button key={q} className="starter" type="button" onClick={() => start("text", q)}>
                       {q}
                     </button>

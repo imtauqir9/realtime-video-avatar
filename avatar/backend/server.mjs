@@ -256,6 +256,13 @@ const server = createServer(async (req, res) => {
       return send(res, 401, { error: "Please sign in with the access code." });
     }
 
+    if (req.method === "GET" && req.url.startsWith("/api/brief?")) {
+      const link = new URL(req.url, "http://x").searchParams.get("link") || "";
+      const brief = await fetchBrief(link);
+      if (brief.error) return send(res, 400, { error: brief.error });
+      return send(res, 200, { title: brief.title });
+    }
+
     if (req.method === "GET" && req.url === "/api/replica") {
       if (!KEY) return send(res, 200, { image: "", video: "" });
       return send(res, 200, await replicaInfo());
