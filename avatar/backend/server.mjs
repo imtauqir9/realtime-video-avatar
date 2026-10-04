@@ -64,6 +64,30 @@ function serveStatic(req, res) {
 }
 const MAX_MINUTES = Number(process.env.DEMO_MAX_MINUTES || 3);
 
+// --- article briefings ---
+// The writing app opens this page with ?brief=<signed link to a briefing on one article>.
+// The briefing becomes the conversation's context, so the avatar can discuss that article.
+// Only links on BRIEF_HOSTS are fetched: anyone can put a URL in the address bar, and an
+// open fetch would let a stranger choose what the avatar is told and make this server
+// request arbitrary addresses.
+const BRIEF_HOSTS = (process.env.BRIEF_HOSTS || "seo-writer-app.fly.dev")
+  .split(",").map((h) => h.trim().toLowerCase()).filter(Boolean);
+const BRIEF_MAX_CHARS = 12000;
+
+async function fetchBrief(link) {
+  let url;
+  try { url = new URL(String(link)); } catch { return { error: "That article link is not a valid URL." }; }
+  if (url.protocol !== "https:" || !BRIEF_HOSTS.includes(url.hostname.toLowerCase()) || !url.pathname.startsWith("/dl/")) {
+    return { error: "That article link is not from the writing app." };
+  }
+  const r = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(10000) });
+  if (r.status === 410) return { error: "That article link has expired. Open it again from the article page." };
+  if (!r.ok) return { error: `Could not read the article briefing (HTTP ${r.status}).` };
+  const text = (await r.text()).slice(0, BRIEF_MAX_CHARS);
+  const title = ((text.match(/^ARTICLE YOU WROTE: (.+)$/m) || [])[1] || "").trim().slice(0, 140);
+  return { text, title };
+}
+
 // --- access-code authentication ---
 // Set ACCESS_CODE (a shared password) to require a login before a session can start. When it is
 // unset (typical for local dev) the app is open. Sessions are an HMAC-signed, HttpOnly cookie;
@@ -220,11 +244,23 @@ const server = createServer(async (req, res) => {
           error: "TAVUS_PERSONA_ID is not set. Run `uv run setup_demo.py` in the project root first to create your persona.",
         });
       }
+      const { brief: briefLink } = await readJson(req);
+      let brief = null;
+      if (briefLink) {
+        brief = await fetchBrief(briefLink);
+        if (brief.error) return send(res, 400, { error: brief.error });
+      }
       await endActiveConversations(); // free the concurrency slot from any prior session
       const { status, body } = await tavus("/conversations", "POST", {
         persona_id: PERSONA_ID,
         replica_id: REPLICA_ID,
-        conversation_name: "Avatar web demo",
+        conversation_name: brief?.title ? `About: ${brief.title}`.slice(0, 120) : "Avatar web demo",
+        ...(brief ? {
+          conversational_context: brief.text,
+          custom_greeting: brief.title
+            ? `Hi, I'm ${process.env.AVATAR_FIRST_NAME || "Imran"}. Happy to talk about "${brief.title}". What would you like to know?`
+            : undefined,
+        } : {}),
         properties: {
           max_call_duration: MAX_MINUTES * 60,
           participant_left_timeout: 30,
@@ -237,6 +273,7 @@ const server = createServer(async (req, res) => {
         conversation_url: body.conversation_url,
         conversation_id: body.conversation_id,
         max_seconds: MAX_MINUTES * 60,
+        topic: brief?.title || "",
       });
     }
 

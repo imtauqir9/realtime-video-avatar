@@ -1,7 +1,19 @@
 export type Conversation = { conversation_url: string; conversation_id: string; max_seconds?: number };
 
+// Opened from an article ("Ask Imran about this"), the page carries ?brief=<link to a
+// briefing on that article>. The backend fetches it (from an allowed host only) and
+// the avatar starts the conversation already knowing the article.
+function briefLink(): string {
+  return new URLSearchParams(window.location.search).get("brief") || "";
+}
+
 export async function createConversation(): Promise<Conversation> {
-  const r = await fetch("/api/conversations", { method: "POST" });
+  const brief = briefLink();
+  const r = await fetch("/api/conversations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(brief ? { brief } : {}),
+  });
   if (!r.ok) {
     const e = await r.json().catch(() => ({}));
     // The backend wraps every Tavus rejection as "Tavus create failed" and puts the real
