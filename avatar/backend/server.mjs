@@ -51,6 +51,15 @@ const MIME = {
   ".map": "application/json",
 };
 
+// Sent with every response. The app frames Daily's call, but nothing may frame the app.
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "same-origin",
+  "Strict-Transport-Security": "max-age=31536000",
+  "Permissions-Policy": "geolocation=(), payment=()",
+};
+
 function serveStatic(req, res) {
   const path = decodeURIComponent((req.url || "/").split("?")[0]);
   let file = normalize(join(DIST, path));
@@ -58,7 +67,7 @@ function serveStatic(req, res) {
   if (!existsSync(file) || statSync(file).isDirectory()) file = join(DIST, "index.html"); // SPA fallback
   const ext = extname(file);
   const cache = path.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "no-cache";
-  res.writeHead(200, { "Content-Type": MIME[ext] || "application/octet-stream", "Cache-Control": cache });
+  res.writeHead(200, { ...SECURITY_HEADERS, "Content-Type": MIME[ext] || "application/octet-stream", "Cache-Control": cache });
   res.end(readFileSync(file));
   return true;
 }
@@ -142,6 +151,22 @@ function throttled(ip) {
   a.count += 1;
   return a.count > 10;
 }
+const PER_IP_PER_HOUR = Number(process.env.CONVERSATIONS_PER_IP_PER_HOUR || 6);
+const PER_DAY = Number(process.env.CONVERSATIONS_PER_DAY || 60);
+const starts = new Map();
+let daily = { day: "", count: 0 };
+function overLimit(ip) {
+  const now = Date.now();
+  const today = new Date().toISOString().slice(0, 10);
+  if (daily.day !== today) daily = { day: today, count: 0 };
+  if (daily.count >= PER_DAY) return "The avatar has reached today's conversation limit. Please try again tomorrow.";
+  const recent = (starts.get(ip) || []).filter((t) => now - t < 60 * 60 * 1000);
+  if (recent.length >= PER_IP_PER_HOUR) return "Too many conversations from here in the last hour. Please try again later.";
+  recent.push(now);
+  starts.set(ip, recent);
+  daily.count += 1;
+  return "";
+}
 const clientIp = (req) => (req.headers["fly-client-ip"] || req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").toString().split(",")[0].trim();
 
 function readJson(req) {
@@ -155,6 +180,7 @@ function readJson(req) {
 
 function send(res, status, body, extraHeaders = {}) {
   res.writeHead(status, {
+    ...SECURITY_HEADERS,
     "Content-Type": "application/json",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
@@ -244,6 +270,8 @@ const server = createServer(async (req, res) => {
           error: "TAVUS_PERSONA_ID is not set. Run `uv run setup_demo.py` in the project root first to create your persona.",
         });
       }
+      const limited = overLimit(clientIp(req));
+      if (limited) return send(res, 429, { error: limited });
       const { brief: briefLink } = await readJson(req);
       let brief = null;
       if (briefLink) {
